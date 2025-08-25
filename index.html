@@ -20,7 +20,7 @@
 
 					<!-- Logo -->
 						<div id="logo">
-							<span class="image avatar48"><img src="images/avatar.jpg" alt="" /></span>
+							<span class="image avatar48"><img src="bam.jpg" alt="" /></span>
 							<h1 id="title">Abbie Bambrough</h1>
 							<p>Product Design</p>
 						</div>
@@ -67,7 +67,7 @@
 							</header>
 
 							<footer>
-								<a href="#portfolio" class="button scrolly">Magna Aliquam</a>
+								<a href="#portfolio" class="button scrolly">See my work</a>
 							</footer>
 
 						</div>
@@ -86,51 +86,7 @@
 							Tellus erat mauris ipsum fermentum etiam vivamus eget. Nunc nibh morbi quis
 							fusce hendrerit lacus ridiculus.</p>
 
-							<div class="row">
-								<div class="col-4 col-12-mobile">
-									<article class="item">
-										<div id="cad-viewer" style="height: 300px; width: 100%; border: 1px solid #ddd; border-radius: 4px; overflow: hidden;"></div>
-										<header>
-											<h3>Interactive 3D Dining Table</h3>
-											<p style="font-size: 0.9em; color: #666;">Click and drag to rotate • Scroll to zoom</p>
-										</header>
-									</article>
-									<article class="item">
-										<a href="#" class="image fit"><img src="images/pic03.jpg" alt="" /></a>
-										<header>
-											<h3>Rhoncus Semper</h3>
-										</header>
-									</article>
-								</div>
-								<div class="col-4 col-12-mobile">
-									<article class="item">
-										<a href="#" class="image fit"><img src="images/pic04.jpg" alt="" /></a>
-										<header>
-											<h3>Magna Nullam</h3>
-										</header>
-									</article>
-									<article class="item">
-										<a href="#" class="image fit"><img src="images/pic05.jpg" alt="" /></a>
-										<header>
-											<h3>Natoque Vitae</h3>
-										</header>
-									</article>
-								</div>
-								<div class="col-4 col-12-mobile">
-									<article class="item">
-										<a href="#" class="image fit"><img src="images/pic06.jpg" alt="" /></a>
-										<header>
-											<h3>Dolor Penatibus</h3>
-										</header>
-									</article>
-									<article class="item">
-										<a href="#" class="image fit"><img src="images/pic07.jpg" alt="" /></a>
-										<header>
-											<h3>Orci Convallis</h3>
-										</header>
-									</article>
-								</div>
-							</div>
+							<div class="row" id="work-display-container"></div>
 
 						</div>
 					</section>
@@ -143,7 +99,7 @@
 								<h2>About Me</h2>
 							</header>
 
-							<a href="#" class="image featured"><img src="images/pic08.jpg" alt="" /></a>
+							<a href="#" class="image featured"><img src="about.jpg" alt="" /></a>
 
 							<p>Tincidunt eu elit diam magnis pretium accumsan etiam id urna. Ridiculus
 							ultricies curae quis et rhoncus velit. Lobortis elementum aliquet nec vitae
@@ -262,8 +218,163 @@
 						}
 						
 						try {
-							var viewer = new CADViewer('cad-viewer', 'cad/simple_dining_table/scene.gltf');
-							console.log('CADViewer initialized', viewer);
+							// Dynamically create one viewer per WORK_DISPLAY manifest item
+							(function() {
+								var container = document.getElementById('work-display-container');
+								if (!container) {
+									console.warn('work-display-container not found; skipping dynamic viewers.');
+									return;
+								}
+								
+								// Load manifest (generated in WORK_DISPLAY/manifest.json)
+								// Fallback behaviour: if manifest.json is missing, attempt to scan the WORK_DISPLAY directory
+								// for subfolders and try to locate a .gltf model (works when the server exposes directory listings).
+								(function() {
+									var container = document.getElementById('work-display-container');
+									if (!container) {
+										console.warn('work-display-container not found; skipping dynamic viewers.');
+										return;
+									}
+									
+									function createViewerElement(name, modelUrl, idx) {
+										var col = document.createElement('div');
+										col.className = 'col-4 col-12-mobile';
+										
+										var article = document.createElement('article');
+										article.className = 'item';
+										
+										var viewerDiv = document.createElement('div');
+										var id = 'work-cad-' + idx;
+										viewerDiv.id = id;
+										viewerDiv.style.height = '300px';
+										viewerDiv.style.width = '100%';
+										viewerDiv.style.border = '1px solid #ddd';
+										viewerDiv.style.borderRadius = '4px';
+										viewerDiv.style.overflow = 'hidden';
+										
+										article.appendChild(viewerDiv);
+										
+										var header = document.createElement('header');
+										var h3 = document.createElement('h3');
+										h3.textContent = name || ('Item ' + (idx + 1));
+										header.appendChild(h3);
+										article.appendChild(header);
+										
+										col.appendChild(article);
+										container.appendChild(col);
+										
+										try {
+											new CADViewer(id, modelUrl);
+											console.log('CADViewer initialized for', name, modelUrl);
+										} catch (e) {
+											console.error('Failed to initialize CADViewer for', name, e);
+										}
+									}
+									
+									function tryLoadManifest() {
+										return fetch('WORK_DISPLAY/manifest.json').then(function(res) {
+											if (!res.ok) throw new Error('Manifest fetch failed: ' + res.status);
+											return res.json();
+										}).then(function(manifest) {
+											if (!manifest || !Array.isArray(manifest.items)) {
+												throw new Error('No items in manifest');
+											}
+											manifest.items.forEach(function(item, idx) {
+												createViewerElement(item.name, item.model, idx);
+											});
+										});
+									}
+									
+									// Parse an HTML directory listing and return folder hrefs (that end with '/')
+									function parseDirectoryListing(html) {
+										var parser = new DOMParser();
+										var doc = parser.parseFromString(html, 'text/html');
+										var anchors = Array.from(doc.querySelectorAll('a[href]'));
+										return anchors.map(function(a) { return a.getAttribute('href'); })
+											.filter(function(h) { return h && h.endsWith('/'); })
+											.filter(function(h) { return h !== '../'; });
+									}
+									
+									// Recursively look for a .gltf file inside a directory by parsing directory listings.
+									function findGltfInPath(basePath) {
+										// Try to fetch the path and parse for .gltf links or subfolders.
+										return fetch(basePath).then(function(res) {
+											if (!res.ok) return null;
+											return res.text();
+										}).then(function(text) {
+											if (!text) return null;
+											var hrefs = parseDirectoryListing(text);
+											// Look for any direct .gltf links first
+											var gltfMatch = text.match(/href=["']([^"']+\.gltf)["']/i);
+											if (gltfMatch) {
+												var candidate = gltfMatch[1];
+												// If candidate is relative, prefix basePath
+												if (/^https?:|^\//i.test(candidate)) return candidate;
+												return basePath + candidate;
+											}
+											// Otherwise walk subfolders (first-level) and try to find .gltf there
+											var promises = hrefs.map(function(h) {
+												var nextPath = basePath + h;
+												// Try to find gltf in nextPath (may recurse)
+												return findGltfInPath(nextPath).catch(function() { return null; });
+											});
+											return Promise.all(promises).then(function(results) {
+												for (var i = 0; i < results.length; i++) {
+													if (results[i]) return results[i];
+												}
+												return null;
+											});
+										}).catch(function() {
+											return null;
+										});
+									}
+									
+									function scanWorkDisplay() {
+										return fetch('WORK_DISPLAY/').then(function(res) {
+											if (!res.ok) throw new Error('WORK_DISPLAY directory fetch failed: ' + res.status);
+											return res.text();
+										}).then(function(html) {
+											var folders = parseDirectoryListing(html);
+											if (!folders || folders.length === 0) {
+												throw new Error('No folders found in WORK_DISPLAY directory listing');
+											}
+											var counter = 0;
+											var tasks = folders.map(function(folderHref) {
+												var folderPath = 'WORK_DISPLAY/' + folderHref;
+												// First try common CAD_MODEL location
+												return findGltfInPath(folderPath + 'CAD_MODEL/').then(function(gltfUrl) {
+													if (!gltfUrl) {
+														// As a fallback, try to find any .gltf under the folder root
+														return findGltfInPath(folderPath).then(function(gltfUrl2) {
+															if (!gltfUrl2) {
+																console.warn('No .gltf found in', folderPath);
+																return null;
+															}
+															return { name: folderHref.replace(/\/$/, ''), model: gltfUrl2 };
+														});
+													}
+													return { name: folderHref.replace(/\/$/, ''), model: gltfUrl };
+												}).then(function(result) {
+													if (result) {
+														createViewerElement(result.name, result.model, counter++);
+													}
+												}).catch(function(err) {
+													console.warn('Error scanning folder', folderPath, err);
+												});
+											});
+											return Promise.all(tasks);
+										});
+									}
+									
+									// Try manifest first, then fallback to scanning WORK_DISPLAY directory when manifest is absent.
+									tryLoadManifest().catch(function(manifestErr) {
+										console.warn('Manifest load failed, attempting directory scan:', manifestErr);
+										return scanWorkDisplay();
+									}).catch(function(err) {
+										console.error('Failed to load WORK_DISPLAY items (manifest + scan):', err);
+									});
+								})();
+							})();
 						} catch (err) {
 							console.error('Error initializing CADViewer:', err && err.stack ? err.stack : err);
 						}

@@ -1,0 +1,272 @@
+<!DOCTYPE HTML>
+<!--
+	Prologue by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+		<title>Project Details - Abbie Bambrough</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<style>
+			.project-details {
+				padding: 2rem 0;
+			}
+			
+			.project-header {
+				text-align: center;
+				margin-bottom: 2rem;
+			}
+			
+			.model-container {
+				height: 500px;
+				width: 100%;
+				border: 1px solid #ddd;
+				border-radius: 8px;
+				overflow: hidden;
+				margin-bottom: 2rem;
+				background: #f5f5f5;
+			}
+			
+			.image-gallery {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+				gap: 1rem;
+				margin-bottom: 2rem;
+			}
+			
+			.gallery-image {
+				width: 100%;
+				height: 250px;
+				object-fit: cover;
+				border-radius: 8px;
+				cursor: pointer;
+				transition: transform 0.3s ease;
+			}
+			
+			.gallery-image:hover {
+				transform: scale(1.05);
+			}
+			
+			.text-content {
+				background: #f8f8f8;
+				padding: 2rem;
+				border-radius: 8px;
+				margin-bottom: 2rem;
+			}
+			
+			.back-button {
+				display: inline-block;
+				margin-bottom: 2rem;
+				padding: 0.5rem 1rem;
+				background: #4c5c96;
+				color: white;
+				text-decoration: none;
+				border-radius: 4px;
+				transition: background 0.3s ease;
+			}
+			
+			.back-button:hover {
+				background: #3a4975;
+			}
+		</style>
+	</head>
+	<body class="is-preload">
+
+		<!-- Header -->
+			<div id="header">
+				<div class="top">
+					<!-- Logo -->
+						<div id="logo">
+							<span class="image avatar48"><img src="bam.jpg" alt="" /></span>
+							<h1 id="title">Abbie Bambrough</h1>
+							<p>Product Design</p>
+						</div>
+
+					<!-- Nav -->
+						<nav id="nav">
+							<ul>
+								<li><a href="index.html#top" id="top-link"><span class="icon solid fa-home">Home</span></a></li>
+								<li><a href="index.html#portfolio" id="portfolio-link"><span class="icon solid fa-th">Portfolio</span></a></li>
+								<li><a href="index.html#about" id="about-link"><span class="icon solid fa-user">About Me</span></a></li>
+								<li><a href="index.html#contact" id="contact-link"><span class="icon solid fa-envelope">Contact</span></a></li>
+							</ul>
+						</nav>
+				</div>
+
+				<div class="bottom">
+					<!-- Social Icons -->
+						<ul class="icons">
+							<li><a href="#" class="icon brands fa-twitter"><span class="label">Twitter</span></a></li>
+							<li><a href="#" class="icon brands fa-facebook-f"><span class="label">Facebook</span></a></li>
+							<li><a href="#" class="icon brands fa-github"><span class="label">Github</span></a></li>
+							<li><a href="#" class="icon brands fa-dribbble"><span class="label">Dribbble</span></a></li>
+							<li><a href="#" class="icon solid fa-envelope"><span class="label">Email</span></a></li>
+						</ul>
+				</div>
+			</div>
+
+		<!-- Main -->
+			<div id="main">
+				<!-- Project Details -->
+				<section id="project-details" class="project-details">
+					<div class="container">
+						<a href="index.html#portfolio" class="back-button">
+							<span class="icon solid fa-arrow-left"></span> Back to Portfolio
+						</a>
+						
+						<div class="project-header">
+							<h2 id="project-title">Project Details</h2>
+						</div>
+						
+						<!-- 3D Model Viewer -->
+						<div class="model-container" id="detail-cad-viewer"></div>
+						
+						<!-- Image Gallery -->
+						<div class="image-gallery" id="image-gallery"></div>
+						
+						<!-- Text Content -->
+						<div class="text-content" id="text-content">
+							<h3>Project Description</h3>
+							<p>Loading project details...</p>
+						</div>
+					</div>
+				</section>
+			</div>
+
+		<!-- Footer -->
+			<div id="footer">
+				<!-- Copyright -->
+					<ul class="copyright">
+						<li>&copy; Abbie Bambrough. All rights reserved.</li><li>Design: <a href="http://html5up.net">HTML5 UP</a></li>
+					</ul>
+			</div>
+
+		<!-- Scripts -->
+			<script>
+				// Capture detailed errors and unhandled promise rejections to help debugging.
+				window.addEventListener('error', function (e) {
+					try {
+						console.error('Captured error:', e.message, e.filename + ':' + e.lineno + ':' + e.colno);
+						if (e.error && e.error.stack) console.error('Stack:', e.error.stack);
+					} catch (err) {
+						console.error('Error while reporting error:', err);
+					}
+				});
+				window.addEventListener('unhandledrejection', function (e) {
+					try {
+						console.error('Unhandled rejection:', e.reason && (e.reason.stack || e.reason));
+					} catch (err) {
+						console.error('Error while reporting rejection:', err);
+					}
+				});
+			</script>
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous"></script>
+			<script type="module">
+				// Import the example ES module versions and attach them to THREE so legacy non-module code
+				// (assets/js/3d-viewer.js) can use `new THREE.GLTFLoader()` and `new THREE.OrbitControls(...)`.
+				// Use jsDelivr GH path (specific commit/tag) to avoid 404s.
+				import { GLTFLoader } from 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/jsm/loaders/GLTFLoader.js';
+				import { OrbitControls } from 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/jsm/controls/OrbitControls.js';
+				// Ensure THREE exists and expose the classes on it.
+				window.THREE = window.THREE || THREE;
+				THREE.GLTFLoader = GLTFLoader;
+				THREE.OrbitControls = OrbitControls;
+				console.debug('Attached GLTFLoader and OrbitControls from jsm modules to THREE (jsdelivr GH)');
+			</script>
+			<script src="assets/js/3d-viewer.js"></script>
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.scrolly.min.js"></script>
+			<script src="assets/js/jquery.scrollex.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+			<script>
+				document.addEventListener('DOMContentLoaded', function() {
+					// Get project name from URL parameters
+					const urlParams = new URLSearchParams(window.location.search);
+					const projectName = urlParams.get('project');
+					
+					if (!projectName) {
+						document.getElementById('text-content').innerHTML = '<p>No project specified. Please select a project from the portfolio.</p>';
+						return;
+					}
+					
+					// Update page title and header
+					document.getElementById('project-title').textContent = projectName.replace(/_/g, ' ');
+					document.title = projectName.replace(/_/g, ' ') + ' - Abbie Bambrough';
+					
+					// Load project data from manifest
+					fetch('WORK_DISPLAY/manifest.json')
+						.then(response => response.json())
+						.then(manifest => {
+							const project = manifest.items.find(item => item.name === projectName);
+							if (!project) {
+								throw new Error('Project not found in manifest');
+							}
+							
+							// Initialize 3D viewer
+							if (window.CADViewer) {
+								new CADViewer('detail-cad-viewer', project.model);
+							}
+							
+							// Load render images
+							loadRenderImages(projectName);
+							
+							// Load text content
+							loadTextContent(projectName);
+						})
+						.catch(error => {
+							console.error('Error loading project:', error);
+							document.getElementById('text-content').innerHTML = '<p>Error loading project details: ' + error.message + '</p>';
+						});
+					
+					function loadRenderImages(projectName) {
+						const gallery = document.getElementById('image-gallery');
+						const imageDir = `WORK_DISPLAY/${projectName}/RENDER_IMAGES/`;
+						
+						// Use known image names that exist in the directory structure
+						const knownImages = ['table1.jpg', 'table2.jpg', 'table3.jpg'];
+						
+						knownImages.forEach(imageName => {
+							const img = document.createElement('img');
+							img.src = imageDir + imageName;
+							img.alt = projectName + ' render';
+							img.className = 'gallery-image';
+							img.onerror = () => {
+								console.warn('Image not found:', imageDir + imageName);
+								img.remove(); // Remove if image doesn't exist
+							};
+							gallery.appendChild(img);
+						});
+					}
+					
+					function loadTextContent(projectName) {
+						const textFile = `WORK_DISPLAY/${projectName}/TextContent.txt`;
+						
+						fetch(textFile)
+							.then(response => {
+								if (!response.ok) throw new Error('Text file not found');
+								return response.text();
+							})
+							.then(text => {
+								document.getElementById('text-content').innerHTML = `
+									<h3>Project Description</h3>
+									<p>${text.replace(/\n/g, '<br>')}</p>
+								`;
+							})
+							.catch(error => {
+								console.warn('Could not load text content:', error);
+								document.getElementById('text-content').innerHTML = `
+									<h3>Project Description</h3>
+									<p>No description available for this project.</p>
+								`;
+							});
+					}
+				});
+			</script>
+	</body>
+</html>

@@ -266,6 +266,12 @@
 										try {
 											new CADViewer(id, modelUrl);
 											console.log('CADViewer initialized for', name, modelUrl);
+											
+											// Make the portfolio item clickable
+											article.style.cursor = 'pointer';
+											article.addEventListener('click', function() {
+												window.location.href = 'detail.html?project=' + encodeURIComponent(name);
+											});
 										} catch (e) {
 											console.error('Failed to initialize CADViewer for', name, e);
 										}

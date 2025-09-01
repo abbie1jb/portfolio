@@ -1,0 +1,8 @@
+﻿{
+    "items":  [
+                  {
+                      "name":  "Table_Temporary",
+                      "model":  "WORK_DISPLAY/Table_Temporary/CAD_MODEL/simple_dining_table/scene.gltf"
+                  }
+              ]
+}

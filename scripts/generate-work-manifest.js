@@ -59,6 +59,19 @@ function findFirstGltf(dir, depth = 0, maxDepth = 6) {
   return null;
 }
 
+function findDisplayImage(folderPath) {
+  const displayImagePath = path.join(folderPath, 'DISPLAY_IMAGE');
+  if (!fs.existsSync(displayImagePath) || !fs.statSync(displayImagePath).isDirectory()) {
+    return null;
+  }
+
+  const files = fs.readdirSync(displayImagePath);
+  const imageFile = files.find(f => /\.(jpe?g|png|gif|webp)$/i.test(f));
+  if (!imageFile) return null;
+
+  return path.join(displayImagePath, imageFile);
+}
+
 function generateManifest() {
   if (!fs.existsSync(workDisplayDir) || !fs.statSync(workDisplayDir).isDirectory()) {
     console.error('WORK_DISPLAY directory not found at:', workDisplayDir);
@@ -74,13 +87,24 @@ function generateManifest() {
     const folderName = entry.name;
     const folderPath = path.join(workDisplayDir, folderName);
 
-    // Try common sub-paths first (optional heuristics)
+    // Prefer DISPLAY_IMAGE first
+    let modelPath = findDisplayImage(folderPath);
+    if (modelPath) {
+      const relative = path.relative(projectRoot, modelPath);
+      items.push({
+        name: folderName,
+        model: toWebPath(relative)
+      });
+      console.log('Found image for', folderName, '->', toWebPath(relative));
+      continue;
+    }
+
+    // Fallback to CAD_MODEL/.gltf search
     const preferredPaths = [
       path.join(folderPath, 'CAD_MODEL'),
       folderPath
     ];
 
-    let modelPath = null;
     for (const p of preferredPaths) {
       modelPath = findFirstGltf(p);
       if (modelPath) break;
@@ -99,7 +123,7 @@ function generateManifest() {
       });
       console.log('Found model for', folderName, '->', toWebPath(relative));
     } else {
-      console.warn('No .gltf/.glb found under', folderName, '- skipping');
+      console.warn('No image or .gltf/.glb found under', folderName, '- skipping');
     }
   }
 

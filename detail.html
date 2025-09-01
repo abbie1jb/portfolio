@@ -163,20 +163,6 @@
 					}
 				});
 			</script>
-			<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous"></script>
-			<script type="module">
-				// Import the example ES module versions and attach them to THREE so legacy non-module code
-				// (assets/js/3d-viewer.js) can use `new THREE.GLTFLoader()` and `new THREE.OrbitControls(...)`.
-				// Use jsDelivr GH path (specific commit/tag) to avoid 404s.
-				import { GLTFLoader } from 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/jsm/loaders/GLTFLoader.js';
-				import { OrbitControls } from 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/jsm/controls/OrbitControls.js';
-				// Ensure THREE exists and expose the classes on it.
-				window.THREE = window.THREE || THREE;
-				THREE.GLTFLoader = GLTFLoader;
-				THREE.OrbitControls = OrbitControls;
-				console.debug('Attached GLTFLoader and OrbitControls from jsm modules to THREE (jsdelivr GH)');
-			</script>
-			<script src="assets/js/3d-viewer.js"></script>
 			<script src="assets/js/jquery.min.js"></script>
 			<script src="assets/js/jquery.scrolly.min.js"></script>
 			<script src="assets/js/jquery.scrollex.min.js"></script>
@@ -208,9 +194,20 @@
 								throw new Error('Project not found in manifest');
 							}
 							
-							// Initialize 3D viewer
-							if (window.CADViewer) {
-								new CADViewer('detail-cad-viewer', project.model);
+							// Display the main image in the model container
+							const modelContainer = document.getElementById('detail-cad-viewer');
+							if (modelContainer) {
+								// Clear the container
+								modelContainer.innerHTML = '';
+								
+								// Create and append the main image
+								const mainImage = document.createElement('img');
+								mainImage.src = project.model;
+								mainImage.alt = projectName + ' main image';
+								mainImage.style.width = '100%';
+								mainImage.style.height = '100%';
+								mainImage.style.objectFit = 'cover';
+								modelContainer.appendChild(mainImage);
 							}
 							
 							// Load render images
@@ -226,22 +223,57 @@
 					
 					function loadRenderImages(projectName) {
 						const gallery = document.getElementById('image-gallery');
-						const imageDir = `WORK_DISPLAY/${projectName}/RENDER_IMAGES/`;
 						
-						// Use known image names that exist in the directory structure
-						const knownImages = ['table1.jpg', 'table2.jpg', 'table3.jpg'];
+						// Load images from RENDER_IMAGES folder
+						const renderImageDir = `WORK_DISPLAY/${projectName}/RENDER_IMAGES/`;
+						const knownRenderImages = ['table1.jpg', 'table2.jpg', 'table3.jpg'];
 						
-						knownImages.forEach(imageName => {
+						knownRenderImages.forEach(imageName => {
 							const img = document.createElement('img');
-							img.src = imageDir + imageName;
+							img.src = renderImageDir + imageName;
 							img.alt = projectName + ' render';
 							img.className = 'gallery-image';
 							img.onerror = () => {
-								console.warn('Image not found:', imageDir + imageName);
+								console.warn('Render image not found:', renderImageDir + imageName);
 								img.remove(); // Remove if image doesn't exist
 							};
 							gallery.appendChild(img);
 						});
+						
+						// Load image from DISPLAY_IMAGE folder
+						const displayImageDir = `WORK_DISPLAY/${projectName}/DISPLAY_IMAGE/`;
+						fetch(displayImageDir)
+							.then(response => {
+								if (!response.ok) throw new Error('DISPLAY_IMAGE directory not accessible');
+								return response.text();
+							})
+							.then(html => {
+								// Parse the directory listing to find the image
+								const parser = new DOMParser();
+								const doc = parser.parseFromString(html, 'text/html');
+								const links = Array.from(doc.querySelectorAll('a[href]'));
+								
+								// Find the first image file
+								const imageLink = links.find(link => {
+									const href = link.getAttribute('href');
+									return /\.(jpe?g|png|gif|webp)$/i.test(href);
+								});
+								
+								if (imageLink) {
+									const img = document.createElement('img');
+									img.src = displayImageDir + imageLink.getAttribute('href');
+									img.alt = projectName + ' display image';
+									img.className = 'gallery-image';
+									img.onerror = () => {
+										console.warn('Display image not found:', displayImageDir + imageLink.getAttribute('href'));
+										img.remove(); // Remove if image doesn't exist
+									};
+									gallery.appendChild(img);
+								}
+							})
+							.catch(error => {
+								console.warn('Could not load DISPLAY_IMAGE:', error);
+							});
 					}
 					
 					function loadTextContent(projectName) {

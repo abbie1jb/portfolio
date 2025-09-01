@@ -1,8 +1,8 @@
-﻿{
-    "items":  [
-                  {
-                      "name":  "Table_Temporary",
-                      "model":  "WORK_DISPLAY/Table_Temporary/CAD_MODEL/simple_dining_table/scene.gltf"
-                  }
-              ]
+{
+  "items": [
+    {
+      "name": "Table_Temporary",
+      "model": "WORK_DISPLAY/Table_Temporary/DISPLAY_IMAGE/bam.jpg"
+    }
+  ]
 }

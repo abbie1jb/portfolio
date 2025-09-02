@@ -1,8 +1,8 @@
 # PowerShell script to generate WORK_DISPLAY/manifest.json by scanning WORK_DISPLAY folders.
 # Usage (from project root or via the provided .bat): powershell -NoProfile -ExecutionPolicy Bypass -File scripts\generate-work-manifest.ps1
 #
-# This script finds the first .gltf/.glb under each top-level WORK_DISPLAY subfolder
-# (prefers CAD_MODEL) and writes a manifest JSON at WORK_DISPLAY\manifest.json.
+# This script finds the first image or 3D model file under each top-level WORK_DISPLAY subfolder
+# (prefers DISPLAY_IMAGE, then RENDER_IMAGES, then CAD_MODEL with .gltf/.glb/.fbx) and writes a manifest JSON at WORK_DISPLAY\manifest.json.
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $workDisplayDir = Join-Path $projectRoot 'WORK_DISPLAY'
@@ -24,16 +24,34 @@ Get-ChildItem -Path $workDisplayDir -Directory | ForEach-Object {
     $name = $folder.Name
     $model = $null
 
-    # Try CAD_MODEL first
-    $cadModelPath = Join-Path $folder.FullName 'CAD_MODEL'
-    if (Test-Path $cadModelPath) {
-        $modelFile = Get-ChildItem -Path $cadModelPath -Recurse -Include *.gltf,*.glb -File -ErrorAction SilentlyContinue | Select-Object -First 1
-        if ($modelFile) { $model = $modelFile.FullName }
+    # Prefer DISPLAY_IMAGE first
+    $displayImagePath = Join-Path $folder.FullName 'DISPLAY_IMAGE'
+    if (Test-Path $displayImagePath -PathType Container) {
+        $imageFile = Get-ChildItem -Path $displayImagePath -File -ErrorAction SilentlyContinue | Where-Object { $_.Extension -match '\.(jpg|jpeg|png|gif|webp)$' } | Select-Object -First 1
+        if ($imageFile) { $model = $imageFile.FullName }
     }
 
-    # Fallback: search the whole folder
+    # Fallback to RENDER_IMAGES
     if (-not $model) {
-        $modelFile = Get-ChildItem -Path $folder.FullName -Recurse -Include *.gltf,*.glb -File -ErrorAction SilentlyContinue | Select-Object -First 1
+        $renderImagePath = Join-Path $folder.FullName 'RENDER_IMAGES'
+        if (Test-Path $renderImagePath -PathType Container) {
+            $imageFile = Get-ChildItem -Path $renderImagePath -File -ErrorAction SilentlyContinue | Where-Object { $_.Extension -match '\.(jpg|jpeg|png|gif|webp)$' } | Select-Object -First 1
+            if ($imageFile) { $model = $imageFile.FullName }
+        }
+    }
+
+    # Fallback to CAD_MODEL model files (.gltf/.glb/.fbx)
+    if (-not $model) {
+        $cadModelPath = Join-Path $folder.FullName 'CAD_MODEL'
+        if (Test-Path $cadModelPath) {
+            $modelFile = Get-ChildItem -Path $cadModelPath -Recurse -Include *.gltf,*.glb,*.fbx -File -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($modelFile) { $model = $modelFile.FullName }
+        }
+    }
+
+    # Fallback: search the whole folder for model files
+    if (-not $model) {
+        $modelFile = Get-ChildItem -Path $folder.FullName -Recurse -Include *.gltf,*.glb,*.fbx -File -ErrorAction SilentlyContinue | Select-Object -First 1
         if ($modelFile) { $model = $modelFile.FullName }
     }
 
@@ -48,9 +66,9 @@ Get-ChildItem -Path $workDisplayDir -Directory | ForEach-Object {
         }
         $webpath = To-WebPath($relative)
         $items += [PSCustomObject]@{ name = $name; model = $webpath }
-        Write-Output "Found model for $name -> $webpath"
+        Write-Output "Found file for $name -> $webpath"
     } else {
-        Write-Warning "No .gltf/.glb found under $name - skipping"
+        Write-Warning "No image or model file found under $name - skipping"
     }
 }
 

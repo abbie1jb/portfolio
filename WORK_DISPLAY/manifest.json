@@ -1,8 +1,20 @@
-{
-  "items": [
-    {
-      "name": "Table_Temporary",
-      "model": "WORK_DISPLAY/Table_Temporary/DISPLAY_IMAGE/bam.jpg"
-    }
-  ]
+﻿{
+    "items":  [
+                  {
+                      "name":  "Object_1",
+                      "model":  "WORK_DISPLAY/Object_1/DISPLAY_IMAGE/bam.jpg"
+                  },
+                  {
+                      "name":  "Object_2",
+                      "model":  "WORK_DISPLAY/Object_2/DISPLAY_IMAGE/bam.jpg"
+                  },
+                  {
+                      "name":  "Object_3",
+                      "model":  "WORK_DISPLAY/Object_3/DISPLAY_IMAGE/bam.jpg"
+                  },
+                  {
+                      "name":  "Object_4",
+                      "model":  "WORK_DISPLAY/Object_4/DISPLAY_IMAGE/bam.jpg"
+                  }
+              ]
 }

@@ -179,53 +179,37 @@
 			<script src="assets/js/util.js"></script>
 			<script src="assets/js/main.js"></script>
 			<script>
-				// Debug initialization: check that required globals exist and capture any errors.
+				// Initialize portfolio display
 				document.addEventListener('DOMContentLoaded', function() {
 					try {
-						console.log('Debug: window.THREE =', !!window.THREE);
-						console.log('Debug: THREE.GLTFLoader =', !!(window.THREE && window.THREE.GLTFLoader));
-						console.log('Debug: THREE.OrbitControls =', !!(window.THREE && window.THREE.OrbitControls));
-						console.log('Debug: CADViewer defined =', !!window.CADViewer);
-						
-						// Try constructing the loader to force any constructor-related errors to surface with stack.
-						if (window.THREE && window.THREE.GLTFLoader) {
-							try {
-								console.log('Attempting to construct GLTFLoader...');
-								var _testLoader = new THREE.GLTFLoader();
-								console.log('GLTFLoader constructed successfully');
-							} catch (err) {
-								console.error('Error constructing GLTFLoader:', err && err.stack ? err.stack : err);
-							}
-						}
-						
-						// Dynamically create one viewer per WORK_DISPLAY manifest item
+						// Dynamically create portfolio items from WORK_DISPLAY
 						(function() {
 							var container = document.getElementById('work-display-container');
 							if (!container) {
-								console.warn('work-display-container not found; skipping dynamic viewers.');
+								console.warn('work-display-container not found; skipping portfolio display.');
 								return;
 							}
-							
+
 							// Load manifest (generated in WORK_DISPLAY/manifest.json)
 							// Fallback behaviour: if manifest.json is missing, attempt to scan the WORK_DISPLAY directory
-							// for subfolders and try to locate a .gltf model (works when the server exposes directory listings).
+							// for subfolders and try to locate display images.
 							(function() {
 								var container = document.getElementById('work-display-container');
 								if (!container) {
-									console.warn('work-display-container not found; skipping dynamic viewers.');
+									console.warn('work-display-container not found; skipping portfolio display.');
 									return;
 								}
-								
-								function createViewerElement(name, modelUrl, idx) {
+
+								function createPortfolioElement(name, imageUrl, idx) {
 									var col = document.createElement('div');
 									col.className = 'col-4 col-12-mobile';
-									
+
 									var article = document.createElement('article');
 									article.className = 'item';
-									
-									// Create an image element instead of a CAD viewer
+
+									// Create an image element for the portfolio item
 									var img = document.createElement('img');
-									img.src = modelUrl;
+									img.src = imageUrl;
 									img.alt = name || ('Item ' + (idx + 1));
 									img.style.width = '100%';
 									img.style.height = '300px';
@@ -233,25 +217,25 @@
 									img.style.border = '1px solid #ddd';
 									img.style.borderRadius = '4px';
 									img.style.overflow = 'hidden';
-									
+
 									article.appendChild(img);
-									
+
 									var header = document.createElement('header');
 									var h3 = document.createElement('h3');
 									h3.textContent = name || ('Item ' + (idx + 1));
 									header.appendChild(h3);
 									article.appendChild(header);
-									
+
 									col.appendChild(article);
 									container.appendChild(col);
-									
+
 									// Make the portfolio item clickable
 									article.style.cursor = 'pointer';
 									article.addEventListener('click', function() {
 										window.location.href = 'detail.html?project=' + encodeURIComponent(name);
 									});
 								}
-								
+
 								function tryLoadManifest() {
 									return fetch('WORK_DISPLAY/manifest.json').then(function(res) {
 										if (!res.ok) throw new Error('Manifest fetch failed: ' + res.status);
@@ -261,11 +245,11 @@
 											throw new Error('No items in manifest');
 										}
 										manifest.items.forEach(function(item, idx) {
-											createViewerElement(item.name, item.model, idx);
+											createPortfolioElement(item.name, item.model, idx);
 										});
 									});
 								}
-								
+
 								// Parse an HTML directory listing and return folder hrefs (that end with '/')
 								function parseDirectoryListing(html) {
 									var parser = new DOMParser();
@@ -275,41 +259,7 @@
 										.filter(function(h) { return h && h.endsWith('/'); })
 										.filter(function(h) { return h !== '../'; });
 								}
-								
-								// Recursively look for a .gltf file inside a directory by parsing directory listings.
-								function findGltfInPath(basePath) {
-									// Try to fetch the path and parse for .gltf links or subfolders.
-									return fetch(basePath).then(function(res) {
-										if (!res.ok) return null;
-										return res.text();
-									}).then(function(text) {
-										if (!text) return null;
-										var hrefs = parseDirectoryListing(text);
-										// Look for any direct .gltf links first
-										var gltfMatch = text.match(/href=["']([^"']+\.gltf)["']/i);
-										if (gltfMatch) {
-											var candidate = gltfMatch[1];
-											// If candidate is relative, prefix basePath
-											if (/^https?:|^\//i.test(candidate)) return candidate;
-											return basePath + candidate;
-										}
-										// Otherwise walk subfolders (first-level) and try to find .gltf there
-										var promises = hrefs.map(function(h) {
-											var nextPath = basePath + h;
-											// Try to find gltf in nextPath (may recurse)
-											return findGltfInPath(nextPath).catch(function() { return null; });
-										});
-										return Promise.all(promises).then(function(results) {
-											for (var i = 0; i < results.length; i++) {
-												if (results[i]) return results[i];
-											}
-											return null;
-										});
-									}).catch(function() {
-										return null;
-									});
-								}
-								
+
 								// Try to find an image in DISPLAY_IMAGE folder
 								function findDisplayImageInPath(basePath) {
 									var displayImagePath = basePath + 'DISPLAY_IMAGE/';
@@ -331,7 +281,29 @@
 										return null;
 									});
 								}
-								
+
+								// Try to find an image in RENDER_IMAGES folder as fallback
+								function findRenderImageInPath(basePath) {
+									var renderImagePath = basePath + 'RENDER_IMAGES/';
+									return fetch(renderImagePath).then(function(res) {
+										if (!res.ok) return null;
+										return res.text();
+									}).then(function(text) {
+										if (!text) return null;
+										// Look for image file links
+										var imageMatch = text.match(/href=["']([^"']+\.(jpe?g|png|gif|webp))["']/i);
+										if (imageMatch) {
+											var candidate = imageMatch[1];
+											// If candidate is relative, prefix renderImagePath
+											if (/^https?:|^\//i.test(candidate)) return candidate;
+											return renderImagePath + candidate;
+										}
+										return null;
+									}).catch(function() {
+										return null;
+									});
+								}
+
 								function scanWorkDisplay() {
 									return fetch('WORK_DISPLAY/').then(function(res) {
 										if (!res.ok) throw new Error('WORK_DISPLAY directory fetch failed: ' + res.status);
@@ -347,25 +319,19 @@
 											// First try to find an image in DISPLAY_IMAGE folder
 											return findDisplayImageInPath(folderPath).then(function(imageUrl) {
 												if (!imageUrl) {
-													// Fallback to CAD_MODEL/.gltf search
-													return findGltfInPath(folderPath + 'CAD_MODEL/').then(function(gltfUrl) {
-														if (!gltfUrl) {
-															// As a fallback, try to find any .gltf under the folder root
-															return findGltfInPath(folderPath).then(function(gltfUrl2) {
-																if (!gltfUrl2) {
-																	console.warn('No image or .gltf found in', folderPath);
-																	return null;
-																}
-																return { name: folderHref.replace(/\/$/, ''), model: gltfUrl2 };
-															});
+													// Fallback to RENDER_IMAGES folder
+													return findRenderImageInPath(folderPath).then(function(renderImageUrl) {
+														if (!renderImageUrl) {
+															console.warn('No display or render image found in', folderPath);
+															return null;
 														}
-														return { name: folderHref.replace(/\/$/, ''), model: gltfUrl };
+														return { name: folderHref.replace(/\/$/, ''), model: renderImageUrl };
 													});
 												}
 												return { name: folderHref.replace(/\/$/, ''), model: imageUrl };
 											}).then(function(result) {
 												if (result) {
-													createViewerElement(result.name, result.model, counter++);
+													createPortfolioElement(result.name, result.model, counter++);
 												}
 											}).catch(function(err) {
 												console.warn('Error scanning folder', folderPath, err);
@@ -374,7 +340,7 @@
 										return Promise.all(tasks);
 									});
 								}
-								
+
 								// Try manifest first, then fallback to scanning WORK_DISPLAY directory when manifest is absent.
 								tryLoadManifest().catch(function(manifestErr) {
 									console.warn('Manifest load failed, attempting directory scan:', manifestErr);
@@ -385,7 +351,7 @@
 							})();
 						})();
 					} catch (e) {
-						console.error('Fatal error during DOMContentLoaded debug init:', e && e.stack ? e.stack : e);
+						console.error('Fatal error during DOMContentLoaded init:', e && e.stack ? e.stack : e);
 					}
 				});
 			</script>

@@ -121,8 +121,8 @@
 							<h2 id="project-title">Project Details</h2>
 						</div>
 						
-						<!-- 3D Model Viewer -->
-						<div class="model-container" id="detail-cad-viewer"></div>
+						<!-- Project Image Display -->
+						<div class="model-container" id="detail-image-viewer"></div>
 						
 						<!-- Image Gallery -->
 						<div class="image-gallery" id="image-gallery"></div>
@@ -194,8 +194,8 @@
 								throw new Error('Project not found in manifest');
 							}
 							
-							// Display the main image in the model container
-							const modelContainer = document.getElementById('detail-cad-viewer');
+							// Display the main image in the image container
+							const modelContainer = document.getElementById('detail-image-viewer');
 							if (modelContainer) {
 								// Clear the container
 								modelContainer.innerHTML = '';

@@ -223,23 +223,48 @@
 					
 					function loadRenderImages(projectName) {
 						const gallery = document.getElementById('image-gallery');
-						
+
 						// Load images from RENDER_IMAGES folder
 						const renderImageDir = `WORK_DISPLAY/${projectName}/RENDER_IMAGES/`;
-						const knownRenderImages = ['table1.jpg', 'table2.jpg', 'table3.jpg'];
-						
-						knownRenderImages.forEach(imageName => {
-							const img = document.createElement('img');
-							img.src = renderImageDir + imageName;
-							img.alt = projectName + ' render';
-							img.className = 'gallery-image';
-							img.onerror = () => {
-								console.warn('Render image not found:', renderImageDir + imageName);
-								img.remove(); // Remove if image doesn't exist
-							};
-							gallery.appendChild(img);
-						});
-						
+
+						// Fetch directory listing and parse image links
+						fetch(renderImageDir)
+							.then(response => {
+								if (!response.ok) throw new Error('RENDER_IMAGES directory not accessible');
+								return response.text();
+							})
+							.then(html => {
+								const parser = new DOMParser();
+								const doc = parser.parseFromString(html, 'text/html');
+								const links = Array.from(doc.querySelectorAll('a[href]'));
+
+								// Filter to image files
+								const imageLinks = links.filter(link => /\.(jpe?g|png|gif|webp)$/i.test(link.getAttribute('href')));
+
+								if (imageLinks.length === 0) {
+									console.warn('No render images found in', renderImageDir);
+									return;
+								}
+
+								imageLinks.forEach(link => {
+									const href = link.getAttribute('href');
+									// Extract filename from href (handle both relative and absolute paths)
+									const filename = href.split('/').pop();
+									const img = document.createElement('img');
+									img.src = renderImageDir + filename;
+									img.alt = projectName + ' render';
+									img.className = 'gallery-image';
+									img.onerror = () => {
+										console.warn('Render image failed to load:', img.src);
+										img.remove();
+									};
+									gallery.appendChild(img);
+								});
+							})
+							.catch(error => {
+								console.warn('Could not load RENDER_IMAGES directory:', error);
+							});
+
 						// Load image from DISPLAY_IMAGE folder
 						const displayImageDir = `WORK_DISPLAY/${projectName}/DISPLAY_IMAGE/`;
 						fetch(displayImageDir)

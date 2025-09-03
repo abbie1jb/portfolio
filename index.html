@@ -224,124 +224,43 @@
 							});
 						}
 
-						// Parse an HTML directory listing and return folder hrefs (that end with '/')
-						function parseDirectoryListing(html) {
-							var parser = new DOMParser();
-							var doc = parser.parseFromString(html, 'text/html');
-							var anchors = Array.from(doc.querySelectorAll('a[href]'));
-							return anchors.map(function(a) { return a.getAttribute('href'); })
-								.filter(function(h) { return h && h.endsWith('/'); })
-								.filter(function(h) { return h !== '../'; });
-						}
-
-						// Find the first image in a chunk folder
-						function findFirstImageInChunk(chunkPath) {
-							return fetch(chunkPath).then(function(res) {
-								if (!res.ok) return null;
-								return res.text();
-							}).then(function(text) {
-								if (!text) return null;
-								// Look for image file links
-								var imageMatch = text.match(/href=["']([^"']+\.(jpe?g|jpeg|png|gif|webp))["']/i);
-								if (imageMatch) {
-									var candidate = imageMatch[1];
-									// If candidate is relative, prefix chunkPath
-									if (/^https?:|^\//i.test(candidate)) return candidate;
-									return chunkPath + candidate;
+						// Load projects from static configuration
+						function loadProjects() {
+							return fetch('WORK_DISPLAY/projects.json').then(function(response) {
+								if (!response.ok) {
+									throw new Error('Failed to load projects configuration: ' + response.status);
 								}
-								return null;
-							}).catch(function() {
-								return null;
-							});
-						}
-
-						// Find display image for project thumbnail
-						function findDisplayImage(projectPath) {
-							var displayImagePath = projectPath + 'DISPLAY_IMAGE/';
-							return fetch(displayImagePath).then(function(res) {
-								if (!res.ok) return null;
-								return res.text();
-							}).then(function(text) {
-								if (!text) return null;
-								// Look for image file links
-								var imageMatch = text.match(/href=["']([^"']+\.(jpe?g|jpeg|png|gif|webp))["']/i);
-								if (imageMatch) {
-									var candidate = imageMatch[1];
-									// If candidate is relative, prefix displayImagePath
-									if (/^https?:|^\//i.test(candidate)) return candidate;
-									return displayImagePath + candidate;
+								return response.json();
+							}).then(function(config) {
+								if (!config || !Array.isArray(config.projects)) {
+									throw new Error('Invalid projects configuration');
 								}
-								return null;
-							}).catch(function() {
-								return null;
-							});
-						}
-
-						// Find first chunk image as fallback
-						function findFirstChunkImage(projectPath) {
-							return fetch(projectPath).then(function(res) {
-								if (!res.ok) return null;
-								return res.text();
-							}).then(function(text) {
-								if (!text) return null;
-								var folders = parseDirectoryListing(text);
-								// Look for chunk folders (skip special folders)
-								var chunkFolders = folders.filter(function(folder) {
-									var folderName = folder.replace(/\/$/, '');
-									return folderName !== 'DISPLAY_IMAGE' && 
-										   folderName !== 'RENDER_IMAGES' && 
-										   folderName !== 'CAD_MODEL' && 
-										   folderName !== 'OLD_STRUCTURE';
-								});
 								
-								if (chunkFolders.length === 0) return null;
-								
-								// Try to find first image in first chunk
-								var firstChunkPath = projectPath + chunkFolders[0];
-								return findFirstImageInChunk(firstChunkPath);
-							}).catch(function() {
-								return null;
-							});
-						}
-
-						function scanWorkDisplay() {
-							return fetch('WORK_DISPLAY/').then(function(res) {
-								if (!res.ok) throw new Error('WORK_DISPLAY directory fetch failed: ' + res.status);
-								return res.text();
-							}).then(function(html) {
-								var folders = parseDirectoryListing(html);
-								if (!folders || folders.length === 0) {
-									throw new Error('No folders found in WORK_DISPLAY directory listing');
-								}
-								var counter = 0;
-								var tasks = folders.map(function(folderHref) {
-									var projectName = folderHref.replace(/\/$/, '');
-									var projectPath = 'WORK_DISPLAY/' + folderHref;
+								config.projects.forEach(function(project, idx) {
+									var displayImage = project.displayImage;
 									
-									// First try to find display image
-									return findDisplayImage(projectPath).then(function(imageUrl) {
-										if (!imageUrl) {
-											// Fallback to first chunk image
-											return findFirstChunkImage(projectPath);
+									// Fallback to first chunk image if no display image
+									if (!displayImage && project.chunks && project.chunks.length > 0) {
+										var firstChunk = project.chunks[0];
+										if (firstChunk.images && firstChunk.images.length > 0) {
+											displayImage = firstChunk.images[0];
 										}
-										return imageUrl;
-									}).then(function(imageUrl) {
-										if (imageUrl) {
-											createPortfolioElement(projectName, imageUrl, counter++);
-										} else {
-											console.warn('No images found in project:', projectName);
-										}
-									}).catch(function(err) {
-										console.warn('Error scanning project', projectName, err);
-									});
+									}
+									
+									if (displayImage) {
+										createPortfolioElement(project.name, displayImage, idx);
+									} else {
+										console.warn('No display image found for project:', project.name);
+									}
 								});
-								return Promise.all(tasks);
 							});
 						}
 
-						// Scan WORK_DISPLAY directory for projects
-						scanWorkDisplay().catch(function(err) {
-							console.error('Failed to load WORK_DISPLAY items:', err);
+						// Load projects from configuration
+						loadProjects().catch(function(err) {
+							console.error('Failed to load projects:', err);
+							// Show a user-friendly message
+							container.innerHTML = '<div class="col-12"><p style="text-align: center; color: #666;">Unable to load portfolio items. Please check the projects configuration.</p></div>';
 						});
 					} catch (e) {
 						console.error('Fatal error during DOMContentLoaded init:', e && e.stack ? e.stack : e);

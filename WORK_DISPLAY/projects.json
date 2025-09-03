@@ -1,0 +1,25 @@
+﻿{
+    "projects":  [
+                     {
+                         "chunks":  [
+                                        {
+                                            "images":  [
+                                                           "WORK_DISPLAY/Basic/Chunk_1/image - Copy.jpg",
+                                                           "WORK_DISPLAY/Basic/Chunk_1/image.jpg"
+                                                       ],
+                                            "description":  "WORK_DISPLAY/Basic/Chunk_1/Description.txt",
+                                            "name":  "Chunk_1"
+                                        },
+                                        {
+                                            "images":  [
+                                                           "WORK_DISPLAY/Basic/Chunk_2/image.jpg"
+                                                       ],
+                                            "description":  "WORK_DISPLAY/Basic/Chunk_2/Description.txt",
+                                            "name":  "Chunk_2"
+                                        }
+                                    ],
+                         "name":  "Basic",
+                         "displayImage":  "WORK_DISPLAY/Basic/DISPLAY_IMAGE/bam.jpg"
+                     }
+                 ]
+}

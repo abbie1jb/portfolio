@@ -185,124 +185,56 @@
 					document.getElementById('project-title').textContent = projectName.replace(/_/g, ' ');
 					document.title = projectName.replace(/_/g, ' ') + ' - Abbie Bambrough';
 					
-					// Parse an HTML directory listing and return folder hrefs (that end with '/')
-					function parseDirectoryListing(html) {
-						const parser = new DOMParser();
-						const doc = parser.parseFromString(html, 'text/html');
-						const anchors = Array.from(doc.querySelectorAll('a[href]'));
-						return anchors.map(a => a.getAttribute('href'))
-							.filter(h => h && h.endsWith('/'))
-							.filter(h => h !== '../');
-					}
-
-					// Get all images in a chunk folder
-					function getChunkImages(chunkPath) {
-						return fetch(chunkPath).then(response => {
-							if (!response.ok) return [];
-							return response.text();
-						}).then(text => {
-							if (!text) return [];
-							const parser = new DOMParser();
-							const doc = parser.parseFromString(text, 'text/html');
-							const links = Array.from(doc.querySelectorAll('a[href]'));
-							const imageLinks = links.filter(link => /\.(jpe?g|jpeg|png|gif|webp)$/i.test(link.getAttribute('href')));
-							
-							return imageLinks.map(link => {
-								const href = link.getAttribute('href');
-								// If href is relative, prefix chunkPath
-								if (/^https?:|^\//i.test(href)) return href;
-								return chunkPath + href;
-							});
-						}).catch(() => []);
-					}
-
-					// Get description text from chunk
-					function getChunkDescription(chunkPath) {
-						return fetch(chunkPath + 'Description.txt').then(response => {
-							if (!response.ok) return 'No description available for this chunk.';
-							return response.text();
-						}).catch(() => 'No description available for this chunk.');
-					}
-
-					// Find display image for main project image
-					function findDisplayImage(projectPath) {
-						const displayImagePath = projectPath + 'DISPLAY_IMAGE/';
-						return fetch(displayImagePath).then(response => {
-							if (!response.ok) return null;
-							return response.text();
-						}).then(text => {
-							if (!text) return null;
-							const imageMatch = text.match(/href=["']([^"']+\.(jpe?g|jpeg|png|gif|webp))["']/i);
-							if (imageMatch) {
-								const candidate = imageMatch[1];
-								if (/^https?:|^\//i.test(candidate)) return candidate;
-								return displayImagePath + candidate;
-							}
-							return null;
-						}).catch(() => null);
-					}
-
 					// Load and display project
 					function loadProject() {
-						const projectPath = `WORK_DISPLAY/${projectName}/`;
-						
-						// Load display image for main container
-						findDisplayImage(projectPath).then(displayImageUrl => {
+						// Load projects configuration
+						fetch('WORK_DISPLAY/projects.json').then(response => {
+							if (!response.ok) {
+								throw new Error('Failed to load projects configuration: ' + response.status);
+							}
+							return response.json();
+						}).then(config => {
+							if (!config || !Array.isArray(config.projects)) {
+								throw new Error('Invalid projects configuration');
+							}
+							
+							// Find the requested project
+							const project = config.projects.find(p => p.name === projectName);
+							if (!project) {
+								throw new Error('Project not found: ' + projectName);
+							}
+							
+							// Display main image
 							const modelContainer = document.getElementById('detail-image-viewer');
-							if (modelContainer && displayImageUrl) {
+							if (modelContainer && project.displayImage) {
 								modelContainer.innerHTML = '';
 								const mainImage = document.createElement('img');
-								mainImage.src = displayImageUrl;
+								mainImage.src = project.displayImage;
 								mainImage.alt = projectName + ' main image';
 								mainImage.style.width = '100%';
 								mainImage.style.height = '100%';
 								mainImage.style.objectFit = 'cover';
 								modelContainer.appendChild(mainImage);
 							}
-						});
-
-						// Load chunks
-						fetch(projectPath).then(response => {
-							if (!response.ok) throw new Error('Project directory not found');
-							return response.text();
-						}).then(text => {
-							const folders = parseDirectoryListing(text);
-							// Filter out special folders to get chunk folders
-							const chunkFolders = folders.filter(folder => {
-								const folderName = folder.replace(/\/$/, '');
-								return folderName !== 'DISPLAY_IMAGE' && 
-									   folderName !== 'RENDER_IMAGES' && 
-									   folderName !== 'CAD_MODEL' && 
-									   folderName !== 'OLD_STRUCTURE';
-							});
-
-							if (chunkFolders.length === 0) {
-								document.getElementById('text-content').innerHTML = '<p>No chunks found in this project.</p>';
-								return;
-							}
-
-							// Sort chunks naturally (Chunk_1, Chunk_2, etc.)
-							chunkFolders.sort((a, b) => {
-								const aNum = parseInt(a.match(/\d+/)?.[0] || '0');
-								const bNum = parseInt(b.match(/\d+/)?.[0] || '0');
-								return aNum - bNum;
-							});
-
+							
+							// Display chunks
 							const textContent = document.getElementById('text-content');
 							textContent.innerHTML = '';
-
+							
+							if (!project.chunks || project.chunks.length === 0) {
+								textContent.innerHTML = '<p>No chunks found in this project.</p>';
+								return;
+							}
+							
 							const container = document.createElement('div');
 							container.className = 'project-chunks';
-
+							
 							// Process each chunk
-							const chunkPromises = chunkFolders.map(chunkFolder => {
-								const chunkName = chunkFolder.replace(/\/$/, '');
-								const chunkPath = projectPath + chunkFolder;
-
-								return Promise.all([
-									getChunkImages(chunkPath),
-									getChunkDescription(chunkPath)
-								]).then(([images, description]) => {
+							const chunkPromises = project.chunks.map(chunk => {
+								return fetch(chunk.description).then(response => {
+									if (!response.ok) return 'No description available for this chunk.';
+									return response.text();
+								}).catch(() => 'No description available for this chunk.').then(description => {
 									const chunkDiv = document.createElement('div');
 									chunkDiv.className = 'project-chunk';
 									chunkDiv.style.marginBottom = '3rem';
@@ -312,22 +244,22 @@
 
 									// Add chunk title
 									const chunkTitle = document.createElement('h3');
-									chunkTitle.textContent = chunkName.replace(/_/g, ' ');
+									chunkTitle.textContent = chunk.name.replace(/_/g, ' ');
 									chunkTitle.style.marginBottom = '1rem';
 									chunkDiv.appendChild(chunkTitle);
 
 									// Add images in a grid
-									if (images.length > 0) {
+									if (chunk.images && chunk.images.length > 0) {
 										const imageGrid = document.createElement('div');
 										imageGrid.style.display = 'grid';
 										imageGrid.style.gridTemplateColumns = 'repeat(auto-fit, minmax(250px, 1fr))';
 										imageGrid.style.gap = '1rem';
 										imageGrid.style.marginBottom = '1rem';
 
-										images.forEach(imageSrc => {
+										chunk.images.forEach(imageSrc => {
 											const img = document.createElement('img');
 											img.src = imageSrc;
-											img.alt = chunkName + ' image';
+											img.alt = chunk.name + ' image';
 											img.style.width = '100%';
 											img.style.height = '200px';
 											img.style.objectFit = 'cover';

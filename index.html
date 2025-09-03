@@ -182,174 +182,167 @@
 				// Initialize portfolio display
 				document.addEventListener('DOMContentLoaded', function() {
 					try {
-						// Dynamically create portfolio items from WORK_DISPLAY
-						(function() {
-							var container = document.getElementById('work-display-container');
-							if (!container) {
-								console.warn('work-display-container not found; skipping portfolio display.');
-								return;
-							}
+						var container = document.getElementById('work-display-container');
+						if (!container) {
+							console.warn('work-display-container not found; skipping portfolio display.');
+							return;
+						}
 
-							// Load manifest (generated in WORK_DISPLAY/manifest.json)
-							// Fallback behaviour: if manifest.json is missing, attempt to scan the WORK_DISPLAY directory
-							// for subfolders and try to locate display images.
-							(function() {
-								var container = document.getElementById('work-display-container');
-								if (!container) {
-									console.warn('work-display-container not found; skipping portfolio display.');
-									return;
+						function createPortfolioElement(name, imageUrl, idx) {
+							var col = document.createElement('div');
+							col.className = 'col-4 col-12-mobile';
+
+							var article = document.createElement('article');
+							article.className = 'item';
+
+							// Create an image element for the portfolio item
+							var img = document.createElement('img');
+							img.src = imageUrl;
+							img.alt = name || ('Item ' + (idx + 1));
+							img.style.width = '100%';
+							img.style.height = '300px';
+							img.style.objectFit = 'cover';
+							img.style.border = '1px solid #ddd';
+							img.style.borderRadius = '4px';
+							img.style.overflow = 'hidden';
+
+							article.appendChild(img);
+
+							var header = document.createElement('header');
+							var h3 = document.createElement('h3');
+							h3.textContent = name || ('Item ' + (idx + 1));
+							header.appendChild(h3);
+							article.appendChild(header);
+
+							col.appendChild(article);
+							container.appendChild(col);
+
+							// Make the portfolio item clickable
+							article.style.cursor = 'pointer';
+							article.addEventListener('click', function() {
+								window.location.href = 'detail.html?project=' + encodeURIComponent(name);
+							});
+						}
+
+						// Parse an HTML directory listing and return folder hrefs (that end with '/')
+						function parseDirectoryListing(html) {
+							var parser = new DOMParser();
+							var doc = parser.parseFromString(html, 'text/html');
+							var anchors = Array.from(doc.querySelectorAll('a[href]'));
+							return anchors.map(function(a) { return a.getAttribute('href'); })
+								.filter(function(h) { return h && h.endsWith('/'); })
+								.filter(function(h) { return h !== '../'; });
+						}
+
+						// Find the first image in a chunk folder
+						function findFirstImageInChunk(chunkPath) {
+							return fetch(chunkPath).then(function(res) {
+								if (!res.ok) return null;
+								return res.text();
+							}).then(function(text) {
+								if (!text) return null;
+								// Look for image file links
+								var imageMatch = text.match(/href=["']([^"']+\.(jpe?g|jpeg|png|gif|webp))["']/i);
+								if (imageMatch) {
+									var candidate = imageMatch[1];
+									// If candidate is relative, prefix chunkPath
+									if (/^https?:|^\//i.test(candidate)) return candidate;
+									return chunkPath + candidate;
 								}
+								return null;
+							}).catch(function() {
+								return null;
+							});
+						}
 
-								function createPortfolioElement(name, imageUrl, idx) {
-									var col = document.createElement('div');
-									col.className = 'col-4 col-12-mobile';
-
-									var article = document.createElement('article');
-									article.className = 'item';
-
-									// Create an image element for the portfolio item
-									var img = document.createElement('img');
-									img.src = imageUrl;
-									img.alt = name || ('Item ' + (idx + 1));
-									img.style.width = '100%';
-									img.style.height = '300px';
-									img.style.objectFit = 'cover';
-									img.style.border = '1px solid #ddd';
-									img.style.borderRadius = '4px';
-									img.style.overflow = 'hidden';
-
-									article.appendChild(img);
-
-									var header = document.createElement('header');
-									var h3 = document.createElement('h3');
-									h3.textContent = name || ('Item ' + (idx + 1));
-									header.appendChild(h3);
-									article.appendChild(header);
-
-									col.appendChild(article);
-									container.appendChild(col);
-
-									// Make the portfolio item clickable
-									article.style.cursor = 'pointer';
-									article.addEventListener('click', function() {
-										window.location.href = 'detail.html?project=' + encodeURIComponent(name);
-									});
+						// Find display image for project thumbnail
+						function findDisplayImage(projectPath) {
+							var displayImagePath = projectPath + 'DISPLAY_IMAGE/';
+							return fetch(displayImagePath).then(function(res) {
+								if (!res.ok) return null;
+								return res.text();
+							}).then(function(text) {
+								if (!text) return null;
+								// Look for image file links
+								var imageMatch = text.match(/href=["']([^"']+\.(jpe?g|jpeg|png|gif|webp))["']/i);
+								if (imageMatch) {
+									var candidate = imageMatch[1];
+									// If candidate is relative, prefix displayImagePath
+									if (/^https?:|^\//i.test(candidate)) return candidate;
+									return displayImagePath + candidate;
 								}
+								return null;
+							}).catch(function() {
+								return null;
+							});
+						}
 
-								function tryLoadManifest() {
-									return fetch('WORK_DISPLAY/manifest.json').then(function(res) {
-										if (!res.ok) throw new Error('Manifest fetch failed: ' + res.status);
-										return res.json();
-									}).then(function(manifest) {
-										if (!manifest || !Array.isArray(manifest.items)) {
-											throw new Error('No items in manifest');
-										}
-										manifest.items.forEach(function(item, idx) {
-											createPortfolioElement(item.name, item.model, idx);
-										});
-									});
-								}
-
-								// Parse an HTML directory listing and return folder hrefs (that end with '/')
-								function parseDirectoryListing(html) {
-									var parser = new DOMParser();
-									var doc = parser.parseFromString(html, 'text/html');
-									var anchors = Array.from(doc.querySelectorAll('a[href]'));
-									return anchors.map(function(a) { return a.getAttribute('href'); })
-										.filter(function(h) { return h && h.endsWith('/'); })
-										.filter(function(h) { return h !== '../'; });
-								}
-
-								// Try to find an image in DISPLAY_IMAGE folder
-								function findDisplayImageInPath(basePath) {
-									var displayImagePath = basePath + 'DISPLAY_IMAGE/';
-									return fetch(displayImagePath).then(function(res) {
-										if (!res.ok) return null;
-										return res.text();
-									}).then(function(text) {
-										if (!text) return null;
-										// Look for image file links
-										var imageMatch = text.match(/href=["']([^"']+\.(jpe?g|png|gif|webp))["']/i);
-										if (imageMatch) {
-											var candidate = imageMatch[1];
-											// If candidate is relative, prefix displayImagePath
-											if (/^https?:|^\//i.test(candidate)) return candidate;
-											return displayImagePath + candidate;
-										}
-										return null;
-									}).catch(function() {
-										return null;
-									});
-								}
-
-								// Try to find an image in RENDER_IMAGES folder as fallback
-								function findRenderImageInPath(basePath) {
-									var renderImagePath = basePath + 'RENDER_IMAGES/';
-									return fetch(renderImagePath).then(function(res) {
-										if (!res.ok) return null;
-										return res.text();
-									}).then(function(text) {
-										if (!text) return null;
-										// Look for image file links
-										var imageMatch = text.match(/href=["']([^"']+\.(jpe?g|png|gif|webp))["']/i);
-										if (imageMatch) {
-											var candidate = imageMatch[1];
-											// If candidate is relative, prefix renderImagePath
-											if (/^https?:|^\//i.test(candidate)) return candidate;
-											return renderImagePath + candidate;
-										}
-										return null;
-									}).catch(function() {
-										return null;
-									});
-								}
-
-								function scanWorkDisplay() {
-									return fetch('WORK_DISPLAY/').then(function(res) {
-										if (!res.ok) throw new Error('WORK_DISPLAY directory fetch failed: ' + res.status);
-										return res.text();
-									}).then(function(html) {
-										var folders = parseDirectoryListing(html);
-										if (!folders || folders.length === 0) {
-											throw new Error('No folders found in WORK_DISPLAY directory listing');
-										}
-										var counter = 0;
-										var tasks = folders.map(function(folderHref) {
-											var folderPath = 'WORK_DISPLAY/' + folderHref;
-											// First try to find an image in DISPLAY_IMAGE folder
-											return findDisplayImageInPath(folderPath).then(function(imageUrl) {
-												if (!imageUrl) {
-													// Fallback to RENDER_IMAGES folder
-													return findRenderImageInPath(folderPath).then(function(renderImageUrl) {
-														if (!renderImageUrl) {
-															console.warn('No display or render image found in', folderPath);
-															return null;
-														}
-														return { name: folderHref.replace(/\/$/, ''), model: renderImageUrl };
-													});
-												}
-												return { name: folderHref.replace(/\/$/, ''), model: imageUrl };
-											}).then(function(result) {
-												if (result) {
-													createPortfolioElement(result.name, result.model, counter++);
-												}
-											}).catch(function(err) {
-												console.warn('Error scanning folder', folderPath, err);
-											});
-										});
-										return Promise.all(tasks);
-									});
-								}
-
-								// Try manifest first, then fallback to scanning WORK_DISPLAY directory when manifest is absent.
-								tryLoadManifest().catch(function(manifestErr) {
-									console.warn('Manifest load failed, attempting directory scan:', manifestErr);
-									return scanWorkDisplay();
-								}).catch(function(err) {
-									console.error('Failed to load WORK_DISPLAY items (manifest + scan):', err);
+						// Find first chunk image as fallback
+						function findFirstChunkImage(projectPath) {
+							return fetch(projectPath).then(function(res) {
+								if (!res.ok) return null;
+								return res.text();
+							}).then(function(text) {
+								if (!text) return null;
+								var folders = parseDirectoryListing(text);
+								// Look for chunk folders (skip special folders)
+								var chunkFolders = folders.filter(function(folder) {
+									var folderName = folder.replace(/\/$/, '');
+									return folderName !== 'DISPLAY_IMAGE' && 
+										   folderName !== 'RENDER_IMAGES' && 
+										   folderName !== 'CAD_MODEL' && 
+										   folderName !== 'OLD_STRUCTURE';
 								});
-							})();
-						})();
+								
+								if (chunkFolders.length === 0) return null;
+								
+								// Try to find first image in first chunk
+								var firstChunkPath = projectPath + chunkFolders[0];
+								return findFirstImageInChunk(firstChunkPath);
+							}).catch(function() {
+								return null;
+							});
+						}
+
+						function scanWorkDisplay() {
+							return fetch('WORK_DISPLAY/').then(function(res) {
+								if (!res.ok) throw new Error('WORK_DISPLAY directory fetch failed: ' + res.status);
+								return res.text();
+							}).then(function(html) {
+								var folders = parseDirectoryListing(html);
+								if (!folders || folders.length === 0) {
+									throw new Error('No folders found in WORK_DISPLAY directory listing');
+								}
+								var counter = 0;
+								var tasks = folders.map(function(folderHref) {
+									var projectName = folderHref.replace(/\/$/, '');
+									var projectPath = 'WORK_DISPLAY/' + folderHref;
+									
+									// First try to find display image
+									return findDisplayImage(projectPath).then(function(imageUrl) {
+										if (!imageUrl) {
+											// Fallback to first chunk image
+											return findFirstChunkImage(projectPath);
+										}
+										return imageUrl;
+									}).then(function(imageUrl) {
+										if (imageUrl) {
+											createPortfolioElement(projectName, imageUrl, counter++);
+										} else {
+											console.warn('No images found in project:', projectName);
+										}
+									}).catch(function(err) {
+										console.warn('Error scanning project', projectName, err);
+									});
+								});
+								return Promise.all(tasks);
+							});
+						}
+
+						// Scan WORK_DISPLAY directory for projects
+						scanWorkDisplay().catch(function(err) {
+							console.error('Failed to load WORK_DISPLAY items:', err);
+						});
 					} catch (e) {
 						console.error('Fatal error during DOMContentLoaded init:', e && e.stack ? e.stack : e);
 					}

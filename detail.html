@@ -185,144 +185,201 @@
 					document.getElementById('project-title').textContent = projectName.replace(/_/g, ' ');
 					document.title = projectName.replace(/_/g, ' ') + ' - Abbie Bambrough';
 					
-					// Load project data from manifest
-					fetch('WORK_DISPLAY/manifest.json')
-						.then(response => response.json())
-						.then(manifest => {
-							const project = manifest.items.find(item => item.name === projectName);
-							if (!project) {
-								throw new Error('Project not found in manifest');
-							}
+					// Parse an HTML directory listing and return folder hrefs (that end with '/')
+					function parseDirectoryListing(html) {
+						const parser = new DOMParser();
+						const doc = parser.parseFromString(html, 'text/html');
+						const anchors = Array.from(doc.querySelectorAll('a[href]'));
+						return anchors.map(a => a.getAttribute('href'))
+							.filter(h => h && h.endsWith('/'))
+							.filter(h => h !== '../');
+					}
+
+					// Get all images in a chunk folder
+					function getChunkImages(chunkPath) {
+						return fetch(chunkPath).then(response => {
+							if (!response.ok) return [];
+							return response.text();
+						}).then(text => {
+							if (!text) return [];
+							const parser = new DOMParser();
+							const doc = parser.parseFromString(text, 'text/html');
+							const links = Array.from(doc.querySelectorAll('a[href]'));
+							const imageLinks = links.filter(link => /\.(jpe?g|jpeg|png|gif|webp)$/i.test(link.getAttribute('href')));
 							
-							// Display the main image in the image container
+							return imageLinks.map(link => {
+								const href = link.getAttribute('href');
+								// If href is relative, prefix chunkPath
+								if (/^https?:|^\//i.test(href)) return href;
+								return chunkPath + href;
+							});
+						}).catch(() => []);
+					}
+
+					// Get description text from chunk
+					function getChunkDescription(chunkPath) {
+						return fetch(chunkPath + 'Description.txt').then(response => {
+							if (!response.ok) return 'No description available for this chunk.';
+							return response.text();
+						}).catch(() => 'No description available for this chunk.');
+					}
+
+					// Find display image for main project image
+					function findDisplayImage(projectPath) {
+						const displayImagePath = projectPath + 'DISPLAY_IMAGE/';
+						return fetch(displayImagePath).then(response => {
+							if (!response.ok) return null;
+							return response.text();
+						}).then(text => {
+							if (!text) return null;
+							const imageMatch = text.match(/href=["']([^"']+\.(jpe?g|jpeg|png|gif|webp))["']/i);
+							if (imageMatch) {
+								const candidate = imageMatch[1];
+								if (/^https?:|^\//i.test(candidate)) return candidate;
+								return displayImagePath + candidate;
+							}
+							return null;
+						}).catch(() => null);
+					}
+
+					// Load and display project
+					function loadProject() {
+						const projectPath = `WORK_DISPLAY/${projectName}/`;
+						
+						// Load display image for main container
+						findDisplayImage(projectPath).then(displayImageUrl => {
 							const modelContainer = document.getElementById('detail-image-viewer');
-							if (modelContainer) {
-								// Clear the container
+							if (modelContainer && displayImageUrl) {
 								modelContainer.innerHTML = '';
-								
-								// Create and append the main image
 								const mainImage = document.createElement('img');
-								mainImage.src = project.model;
+								mainImage.src = displayImageUrl;
 								mainImage.alt = projectName + ' main image';
 								mainImage.style.width = '100%';
 								mainImage.style.height = '100%';
 								mainImage.style.objectFit = 'cover';
 								modelContainer.appendChild(mainImage);
 							}
-							
-							// Load render images
-							loadRenderImages(projectName);
-							
-							// Load text content
-							loadTextContent(projectName);
-						})
-						.catch(error => {
+						});
+
+						// Load chunks
+						fetch(projectPath).then(response => {
+							if (!response.ok) throw new Error('Project directory not found');
+							return response.text();
+						}).then(text => {
+							const folders = parseDirectoryListing(text);
+							// Filter out special folders to get chunk folders
+							const chunkFolders = folders.filter(folder => {
+								const folderName = folder.replace(/\/$/, '');
+								return folderName !== 'DISPLAY_IMAGE' && 
+									   folderName !== 'RENDER_IMAGES' && 
+									   folderName !== 'CAD_MODEL' && 
+									   folderName !== 'OLD_STRUCTURE';
+							});
+
+							if (chunkFolders.length === 0) {
+								document.getElementById('text-content').innerHTML = '<p>No chunks found in this project.</p>';
+								return;
+							}
+
+							// Sort chunks naturally (Chunk_1, Chunk_2, etc.)
+							chunkFolders.sort((a, b) => {
+								const aNum = parseInt(a.match(/\d+/)?.[0] || '0');
+								const bNum = parseInt(b.match(/\d+/)?.[0] || '0');
+								return aNum - bNum;
+							});
+
+							const textContent = document.getElementById('text-content');
+							textContent.innerHTML = '';
+
+							const container = document.createElement('div');
+							container.className = 'project-chunks';
+
+							// Process each chunk
+							const chunkPromises = chunkFolders.map(chunkFolder => {
+								const chunkName = chunkFolder.replace(/\/$/, '');
+								const chunkPath = projectPath + chunkFolder;
+
+								return Promise.all([
+									getChunkImages(chunkPath),
+									getChunkDescription(chunkPath)
+								]).then(([images, description]) => {
+									const chunkDiv = document.createElement('div');
+									chunkDiv.className = 'project-chunk';
+									chunkDiv.style.marginBottom = '3rem';
+									chunkDiv.style.padding = '1rem';
+									chunkDiv.style.border = '1px solid #eee';
+									chunkDiv.style.borderRadius = '8px';
+
+									// Add chunk title
+									const chunkTitle = document.createElement('h3');
+									chunkTitle.textContent = chunkName.replace(/_/g, ' ');
+									chunkTitle.style.marginBottom = '1rem';
+									chunkDiv.appendChild(chunkTitle);
+
+									// Add images in a grid
+									if (images.length > 0) {
+										const imageGrid = document.createElement('div');
+										imageGrid.style.display = 'grid';
+										imageGrid.style.gridTemplateColumns = 'repeat(auto-fit, minmax(250px, 1fr))';
+										imageGrid.style.gap = '1rem';
+										imageGrid.style.marginBottom = '1rem';
+
+										images.forEach(imageSrc => {
+											const img = document.createElement('img');
+											img.src = imageSrc;
+											img.alt = chunkName + ' image';
+											img.style.width = '100%';
+											img.style.height = '200px';
+											img.style.objectFit = 'cover';
+											img.style.borderRadius = '8px';
+											img.style.cursor = 'pointer';
+											img.style.transition = 'transform 0.3s ease';
+											
+											img.addEventListener('mouseenter', () => {
+												img.style.transform = 'scale(1.05)';
+											});
+											img.addEventListener('mouseleave', () => {
+												img.style.transform = 'scale(1)';
+											});
+											
+											img.onerror = () => {
+												console.warn('Chunk image failed to load:', imageSrc);
+												img.remove();
+											};
+
+											imageGrid.appendChild(img);
+										});
+
+										chunkDiv.appendChild(imageGrid);
+									}
+
+									// Add description
+									const descDiv = document.createElement('div');
+									descDiv.className = 'chunk-description';
+									descDiv.style.backgroundColor = '#f8f8f8';
+									descDiv.style.padding = '1rem';
+									descDiv.style.borderRadius = '4px';
+									descDiv.innerHTML = `<p>${description.replace(/\n/g, '<br>')}</p>`;
+									chunkDiv.appendChild(descDiv);
+
+									return chunkDiv;
+								});
+							});
+
+							Promise.all(chunkPromises).then(chunkElements => {
+								chunkElements.forEach(chunkElement => {
+									container.appendChild(chunkElement);
+								});
+								textContent.appendChild(container);
+							});
+
+						}).catch(error => {
 							console.error('Error loading project:', error);
 							document.getElementById('text-content').innerHTML = '<p>Error loading project details: ' + error.message + '</p>';
 						});
-					
-					function loadRenderImages(projectName) {
-						const gallery = document.getElementById('image-gallery');
-
-						// Load images from RENDER_IMAGES folder
-						const renderImageDir = `WORK_DISPLAY/${projectName}/RENDER_IMAGES/`;
-
-						// Fetch directory listing and parse image links
-						fetch(renderImageDir)
-							.then(response => {
-								if (!response.ok) throw new Error('RENDER_IMAGES directory not accessible');
-								return response.text();
-							})
-							.then(html => {
-								const parser = new DOMParser();
-								const doc = parser.parseFromString(html, 'text/html');
-								const links = Array.from(doc.querySelectorAll('a[href]'));
-
-								// Filter to image files
-								const imageLinks = links.filter(link => /\.(jpe?g|png|gif|webp)$/i.test(link.getAttribute('href')));
-
-								if (imageLinks.length === 0) {
-									console.warn('No render images found in', renderImageDir);
-									return;
-								}
-
-								imageLinks.forEach(link => {
-									const href = link.getAttribute('href');
-									// Extract filename from href (handle both relative and absolute paths)
-									const filename = href.split('/').pop();
-									const img = document.createElement('img');
-									img.src = renderImageDir + filename;
-									img.alt = projectName + ' render';
-									img.className = 'gallery-image';
-									img.onerror = () => {
-										console.warn('Render image failed to load:', img.src);
-										img.remove();
-									};
-									gallery.appendChild(img);
-								});
-							})
-							.catch(error => {
-								console.warn('Could not load RENDER_IMAGES directory:', error);
-							});
-
-						// Load image from DISPLAY_IMAGE folder
-						const displayImageDir = `WORK_DISPLAY/${projectName}/DISPLAY_IMAGE/`;
-						fetch(displayImageDir)
-							.then(response => {
-								if (!response.ok) throw new Error('DISPLAY_IMAGE directory not accessible');
-								return response.text();
-							})
-							.then(html => {
-								// Parse the directory listing to find the image
-								const parser = new DOMParser();
-								const doc = parser.parseFromString(html, 'text/html');
-								const links = Array.from(doc.querySelectorAll('a[href]'));
-								
-								// Find the first image file
-								const imageLink = links.find(link => {
-									const href = link.getAttribute('href');
-									return /\.(jpe?g|png|gif|webp)$/i.test(href);
-								});
-								
-								if (imageLink) {
-									const img = document.createElement('img');
-									img.src = displayImageDir + imageLink.getAttribute('href');
-									img.alt = projectName + ' display image';
-									img.className = 'gallery-image';
-									img.onerror = () => {
-										console.warn('Display image not found:', displayImageDir + imageLink.getAttribute('href'));
-										img.remove(); // Remove if image doesn't exist
-									};
-									gallery.appendChild(img);
-								}
-							})
-							.catch(error => {
-								console.warn('Could not load DISPLAY_IMAGE:', error);
-							});
 					}
-					
-					function loadTextContent(projectName) {
-						const textFile = `WORK_DISPLAY/${projectName}/TextContent.txt`;
-						
-						fetch(textFile)
-							.then(response => {
-								if (!response.ok) throw new Error('Text file not found');
-								return response.text();
-							})
-							.then(text => {
-								document.getElementById('text-content').innerHTML = `
-									<h3>Project Description</h3>
-									<p>${text.replace(/\n/g, '<br>')}</p>
-								`;
-							})
-							.catch(error => {
-								console.warn('Could not load text content:', error);
-								document.getElementById('text-content').innerHTML = `
-									<h3>Project Description</h3>
-									<p>No description available for this project.</p>
-								`;
-							});
-					}
+
+					loadProject();
 				});
 			</script>
 	</body>

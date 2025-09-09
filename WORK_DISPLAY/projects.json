@@ -4,22 +4,105 @@
                          "chunks":  [
                                         {
                                             "images":  [
-                                                           "WORK_DISPLAY/Basic/Chunk_1/image - Copy.jpg",
-                                                           "WORK_DISPLAY/Basic/Chunk_1/image.jpg"
+                                                           "WORK_DISPLAY/Basic/Chunk_1/exploded view new with pads n screw 2.6 (1).jpg",
+                                                           "WORK_DISPLAY/Basic/Chunk_1/exploded view new with pads n screw 4.8 (1).jpg",
+                                                           "WORK_DISPLAY/Basic/Chunk_1/final render 1.25 (1).jpg",
+                                                           "WORK_DISPLAY/Basic/Chunk_1/final render 4.28 (1).jpg",
+                                                           "WORK_DISPLAY/Basic/Chunk_1/Screenshot 2025-09-03 144602.png"
                                                        ],
                                             "description":  "WORK_DISPLAY/Basic/Chunk_1/Description.txt",
                                             "name":  "Chunk_1"
                                         },
                                         {
                                             "images":  [
-                                                           "WORK_DISPLAY/Basic/Chunk_2/image.jpg"
+                                                           "WORK_DISPLAY/Basic/Chunk_2/hd (1).jpg",
+                                                           "WORK_DISPLAY/Basic/Chunk_2/image.jpg",
+                                                           "WORK_DISPLAY/Basic/Chunk_2/r 3.5 (1).jpg",
+                                                           "WORK_DISPLAY/Basic/Chunk_2/Untitled_Artwork (20).jpg",
+                                                           "WORK_DISPLAY/Basic/Chunk_2/Untitled_Artwork 1 (10).jpg"
                                                        ],
                                             "description":  "WORK_DISPLAY/Basic/Chunk_2/Description.txt",
                                             "name":  "Chunk_2"
+                                        },
+                                        {
+                                            "images":  [
+                                                           "WORK_DISPLAY/Basic/Chunk_3/99.jpg",
+                                                           "WORK_DISPLAY/Basic/Chunk_3/model 1 development 2.22.png",
+                                                           "WORK_DISPLAY/Basic/Chunk_3/tt.jpg",
+                                                           "WORK_DISPLAY/Basic/Chunk_3/Untitled_Artwork (20).jpg"
+                                                       ],
+                                            "description":  "",
+                                            "name":  "Chunk_3"
                                         }
                                     ],
                          "name":  "Basic",
-                         "displayImage":  "WORK_DISPLAY/Basic/DISPLAY_IMAGE/bam.jpg"
+                         "displayImage":  "WORK_DISPLAY/Basic/DISPLAY_IMAGE/File_000 (7).png"
+                     },
+                     {
+                         "chunks":  [
+                                        {
+                                            "images":  [
+                                                           "WORK_DISPLAY/Basic - Copy/Chunk_1/bike strap R11.40.jpg",
+                                                           "WORK_DISPLAY/Basic - Copy/Chunk_1/bike strap R2.38.jpg",
+                                                           "WORK_DISPLAY/Basic - Copy/Chunk_1/ecploded view light 15min.3.jpg",
+                                                           "WORK_DISPLAY/Basic - Copy/Chunk_1/final stap.jpg",
+                                                           "WORK_DISPLAY/Basic - Copy/Chunk_1/Screenshot 2025-09-03 153822.png"
+                                                       ],
+                                            "description":  "WORK_DISPLAY/Basic - Copy/Chunk_1/Description.txt",
+                                            "name":  "Chunk_1"
+                                        }
+                                    ],
+                         "name":  "Basic - Copy",
+                         "displayImage":  "WORK_DISPLAY/Basic - Copy/DISPLAY_IMAGE/bike strap R11.39.jpg"
+                     },
+                     {
+                         "chunks":  [
+                                        {
+                                            "images":  [
+                                                           "WORK_DISPLAY/Basic - Copy (2)/Chunk_1/finished basket render use 1.35.jpg",
+                                                           "WORK_DISPLAY/Basic - Copy (2)/Chunk_1/finished basket render use 1.37.jpg",
+                                                           "WORK_DISPLAY/Basic - Copy (2)/Chunk_1/finished basket render use 3.40.jpg",
+                                                           "WORK_DISPLAY/Basic - Copy (2)/Chunk_1/Gemini_Generated_Image_n2fzlmn2fzlmn2fz.png"
+                                                       ],
+                                            "description":  "WORK_DISPLAY/Basic - Copy (2)/Chunk_1/Description.txt",
+                                            "name":  "Chunk_1"
+                                        },
+                                        {
+                                            "images":  [
+                                                           "WORK_DISPLAY/Basic - Copy (2)/Chunk_2/Screenshot 2025-09-04 203910.png",
+                                                           "WORK_DISPLAY/Basic - Copy (2)/Chunk_2/Screenshot 2025-09-04 203958.png",
+                                                           "WORK_DISPLAY/Basic - Copy (2)/Chunk_2/Screenshot 2025-09-04 210203.png",
+                                                           "WORK_DISPLAY/Basic - Copy (2)/Chunk_2/Screenshot 2025-09-04 211103.png"
+                                                       ],
+                                            "description":  "WORK_DISPLAY/Basic - Copy (2)/Chunk_2/Description.txt",
+                                            "name":  "Chunk_2"
+                                        }
+                                    ],
+                         "name":  "Basic - Copy (2)",
+                         "displayImage":  "WORK_DISPLAY/Basic - Copy (2)/DISPLAY_IMAGE/a19911bb-ef99-40e7-a036-ec5dce9738dc.jpg"
+                     },
+                     {
+                         "chunks":  [
+                                        {
+                                            "images":  [
+                                                           "WORK_DISPLAY/Basic - Copy (3)/Chunk_1/Screenshot 2024-05-14 213203.png",
+                                                           "WORK_DISPLAY/Basic - Copy (3)/Chunk_1/Screenshot 2025-09-08 170746.png",
+                                                           "WORK_DISPLAY/Basic - Copy (3)/Chunk_1/Screenshot 2025-09-08 172247.png"
+                                                       ],
+                                            "description":  "WORK_DISPLAY/Basic - Copy (3)/Chunk_1/Description.txt",
+                                            "name":  "Chunk_1"
+                                        },
+                                        {
+                                            "images":  [
+                                                           "WORK_DISPLAY/Basic - Copy (3)/Chunk_2/Screenshot 2025-09-03 174251.png",
+                                                           "WORK_DISPLAY/Basic - Copy (3)/Chunk_2/Screenshot 2025-09-08 170917.png"
+                                                       ],
+                                            "description":  "WORK_DISPLAY/Basic - Copy (3)/Chunk_2/Description.txt",
+                                            "name":  "Chunk_2"
+                                        }
+                                    ],
+                         "name":  "Basic - Copy (3)",
+                         "displayImage":  "WORK_DISPLAY/Basic - Copy (3)/DISPLAY_IMAGE/Screenshot 2024-06-01 222854.png"
                      }
                  ]
 }
